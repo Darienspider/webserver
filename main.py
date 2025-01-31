@@ -10,6 +10,8 @@ from WarframeAPI.WarframeMarket import WarframeMarket
 from WarframeAPI.WarframeAcquisition import WarframeAcquisition
 from WarframeAPI.WarframeNews import WarframeNews
 
+
+
 # from . import WarframeNews
 
 #the "css" of the site is found in .streamlit/config.toml 
@@ -48,55 +50,43 @@ def generateMarketContainer(item_name):
     if str(item_name).split()[-1].lower()== 'chassis' or str(item_name).split()[-1].lower()== 'systems' or str(item_name).split()[-1].lower()== 'neuroptics':
         item_name = item_name.strip() +' blueprint' #this fixes the need to add blueprint everytime
     if st.button("Generate Market data", key='generateMarketdata'): #if button is clicked
-        st.write(item_name)
         extraction =api.getOrders(item_name=item_name)
         if extraction:
-            
             #################### SELL ORDERS ####################
+            df = pd.DataFrame(api.sell_orders)
+            df = df[df['creation_date'] >= str(datetime.now().year)+'-01-01'] #cuttoff to only show details of previous year forward
 
+            sell_recurring_price = str(df['platinum'].mode()[0])
             
             st.header(f"Sell Orders for {item_name}")
-            total_plat = 0
-            plat_list  = []
-            for i in api.sell_orders:
-                total_plat+= i['platinum']
-                plat_list.append(i['platinum'])
-            st.write(f'Average price is {total_plat / len(api.sell_orders)}')
-            most_common = max(set(plat_list), key=plat_list.count)
-            st.write(f'The most recurring price is: {most_common} platinum')
-            st.dataframe(api.sell_orders)
+            st.write('The most recurring price is: ',sell_recurring_price,' plat')
+
+            df.drop(columns=['visible','region','quantity','id','user'], inplace=True)
+            
+            st.dataframe(df)
+
             # GRID DESIGN
             st.title(f'Year to Date graph for {item_name}')
 
             graph_title = f'Sell orders for {str(item_name).capitalize()}'
-            plt2 = graphVisual(graph_title, api.sell_orders)
+            plt2 = graphVisual(graph_title, df)
             st.pyplot(plt2)
 
-
-
-
-
-
-
             #################### BUY ORDERS ####################
+   
+            buying_df = pd.DataFrame(api.buy_orders)
+            buying_df = buying_df[buying_df['creation_date'] >= str(datetime.now().year)+'-01-01'] #cuttoff to only show details of previous year forward
+            buying_df.drop(columns=['visible','region','quantity','id','user'], inplace=True)
+
             st.header(f"Buy Orders for {item_name}")
-            total_plat = 0
-            plat_list  = []
-            for i in api.buy_orders:
-                total_plat+= i['platinum']
-                plat_list.append(i['platinum'])
-                
-            
-            # average = total_plat / len(api.buy_orders)
-            st.write(f'Average price is {total_plat / len(api.buy_orders)}')
-            st.dataframe(api.buy_orders)
-            most_common = max(set(plat_list), key=plat_list.count)
-            st.write(f'The most recurring price is: {most_common} platinum')
+            st.write('The most recurring price is: ',str(buying_df['platinum'].mode()[0]),' plat')
+            st.dataframe(buying_df)
 
             # Graph visual
             st.title(f'Year to Date graph for {item_name}')
+            
             graph_title = f'Buy orders for {str(item_name).capitalize()}'
-            plt = graphVisual(graph_title, api.buy_orders)
+            plt = graphVisual(graph_title, buying_df)
             st.pyplot(plt)
 
 
