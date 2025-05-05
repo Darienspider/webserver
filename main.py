@@ -166,6 +166,7 @@ def gatherNews():
         st.write(data[i]['URL'])
         st.image(data[i]['image'])
         st.write('-----------------------------------')
+    
 
 if app_chosen =='Warframe News':
     st.title('Warframe News')
