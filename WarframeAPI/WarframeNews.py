@@ -14,7 +14,10 @@ class WarframeNews:
         articles = scanner.find_all('div', class_='Card NewsCard')
         for article in articles:
             innerScanner = BeautifulSoup(str(article),'lxml')
-            image_url = str(innerScanner.find('a', {'class':'Card-media'})['style']).replace('background-image: url(','').replace(');','')
+            try:
+                image_url = str(innerScanner.find('a', {'class':'Card-media'})['style']).replace('background-image: url(','').replace(');','')
+            except:
+                image_url = None
             title = innerScanner.find('div',{'class':'NewsCard-title'}).text
             postTime = str(innerScanner.find('div',{'class':'NewsCard-date'}).text).replace('Posted On ','')
             description = innerScanner.find('div',{'class':'NewsCard-description'}).text

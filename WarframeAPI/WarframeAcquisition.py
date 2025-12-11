@@ -15,7 +15,12 @@ class WarframeAcquisition():
 
     def queryMods (self,item_name):
         pass
-
+    
+    def getAllItems(self):
+        site = rq.get('https://raw.githubusercontent.com/WFCD/warframe-items/refs/heads/master/data/json/All.json')
+        # print(site.text)
+        return site.json()
+    
     def queryItems (self,item_name):
         self.link =rq.get(f'https://api.warframestat.us/items/search/{item_name}')
         if self.link.status_code ==200: #successful
@@ -96,6 +101,11 @@ class WarframeAcquisition():
                         print(f'resource name: {resource_name} not found')
                         
         return names_gathered
+    
+    def __init__(self):
+        self.AllItems = self.getAllItems()
+        
+        
 if __name__ == "__main__":
     access = WarframeAcquisition()
     access.queryItems('Wisp Prime')
