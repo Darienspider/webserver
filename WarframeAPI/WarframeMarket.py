@@ -2,34 +2,41 @@ import json
 import requests as rq
 import pandas as pd
 class WarframeMarket():
-    link = 'https://api.warframe.market/v1'
+    link = 'https://api.warframe.market/v2'
     def __init__(self):
         pass
     
     def __str__(self):
         return "Warframe Market"
     
-    def items(self,item_name):
-
-        item_name = str(item_name).replace(' ','_')
-        site = rq.get(str(self.link) +f'/items/{item_name}')
-        return json.loads(site.content)
-
     def item_orders (self,item_name):
+        if str(item_name).split()[-1].lower()== 'chassis' or str(item_name).split()[-1].lower()== 'systems' or str(item_name).split()[-1].lower()== 'neuroptics':
+            item_name = item_name.strip() +' blueprint' #this fixes the need to add blueprint everytime
+        
+        if str(item_name).split()[-1].lower() == 'prime':
+            item_name = item_name.strip() +' set' #this fixes the need to add 'prime' everytime
+        
         item_name = str(item_name).replace(' ','_')
-        site = rq.get(str(self.link) +f'/items/{item_name}/orders')
-        return json.loads(site.content)
+        print(item_name)
+        site = rq.get(f'{self.link}/orders/item/{item_name}')
+        self.all_orders = json.loads(site.content)
+        return self.all_orders
 
     def getOrders(self,item_name):
-        payload = self.item_orders(f'{item_name}')['payload']['orders']
+        if str(item_name).split()[-1].lower()== 'chassis' or str(item_name).split()[-1].lower()== 'systems' or str(item_name).split()[-1].lower()== 'neuroptics':
+            item_name = item_name.strip() +' blueprint' #this fixes the need to add blueprint everytime  
+        
+        payload = self.item_orders(f'{item_name}')['data']
+
         # print(payload)
         self.buy_orders = []
         self.sell_orders = []
 
         for order in payload:
-            if str(order['order_type']).lower() == 'sell':
+            if str(order['type']).lower() == 'sell':
                 self.sell_orders.append(order)
-            else:
+                
+            if str(order['type']).lower() == 'buy':
                 self.buy_orders.append(order)
 
         if len(self.buy_orders) > 0 or len(self.sell_orders) > 0:
@@ -50,10 +57,29 @@ class WarframeMarket():
         recurring_price = max(set(plat_list), key=plat_list.count)
         return recurring_price
 
+    def rivenMarket(self,item_name):
+            found_items = []
+            riven_parse_site = 'https://www-static.warframe.com/repos/weeklyRivensPC.json'
+            content = rq.get(riven_parse_site)
+
+            if content.status_code == 200:
+                rivens = (json.loads(content.content))
+
+            for i in rivens:
+                if f'{str(item_name).lower()}' in str(i['compatibility']).lower():
+                    found_items.append(i)
+            
+            if len(found_items) < 1:
+                return None
+            else:
+                    return found_items
+                    
 if __name__ == "__main__":
-    item_name = 'wisp prime systems blueprint'
+    item_name = 'wisp prime'
+    # item_name = input('Please enter Item name: ')
+    # typeOfData = input('')
     api = WarframeMarket()
     api.getOrders(item_name)
-    # print(api.buy_orders)
-    pricees = api.recurringPrices()
-    print(pricees)
+    print((api.buy_orders[0]))
+
+    

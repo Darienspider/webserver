@@ -10,6 +10,12 @@ from WarframeAPI.WarframeMarket import WarframeMarket
 from WarframeAPI.WarframeAcquisition import WarframeAcquisition
 from WarframeAPI.WarframeNews import WarframeNews
 
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+today = datetime.today().date()
+ten_months_ago = today - relativedelta(months=10)
+
 
 
 # from . import WarframeNews
@@ -19,7 +25,7 @@ st.set_page_config(page_title='WebServer')
 
 add_selectbox = st.sidebar.selectbox(
     "What App are we using today",
-    ("Warframe Market", "Warframe Acquisition","Warframe News"),
+    ("Warframe Market", "Warframe Acquisition","Warframe News", 'Warframe Riven Market'),
     key='appSelection'
 )
 app_chosen = st.session_state['appSelection']
@@ -28,12 +34,12 @@ def graphVisual(table_title, data):
 
     # Graph visual
     dataframe = pd.DataFrame(data)
-    if 'creation_date' not in dataframe.columns:
-        st.warning("No 'creation_date' column found in the data.")
+    if 'createdAt' not in dataframe.columns:
+        st.warning("No 'createdAt' column found in the data.")
         return plt  # Early exit if column not found
-    dataframe['creation_date'] = pd.to_datetime(dataframe['creation_date'],errors='coerce')
-    dataframe = dataframe[dataframe['creation_date'] >= '2024-01-01']
-    dataframe.set_index('creation_date', inplace=True)
+    dataframe['createdAt'] = pd.to_datetime(dataframe['createdAt'],errors='coerce')
+    dataframe = dataframe[dataframe['createdAt'] >= '2024-01-01']
+    dataframe.set_index('createdAt', inplace=True)
 
     plt.figure(figsize=(20, 12))
     plt.scatter(dataframe.index, dataframe['platinum'], label='Platinum', alpha=0.9)
@@ -54,15 +60,13 @@ def generateMarketContainer(item_name):
         if extraction:
             #################### SELL ORDERS ####################
             df = pd.DataFrame(api.sell_orders)
-            df = df[df['creation_date'] >= str(datetime.now().year)+'-01-01'] #cuttoff to only show details of previous year forward
+            df = df[df['createdAt'] >= str(ten_months_ago)] #cuttoff to only show details of previous year forward
 
             sell_recurring_price = str(df['platinum'].mode()[0])
             
             st.header(f"Sell Orders for {item_name}")
             st.write('The most recurring price is: ',sell_recurring_price,' plat')
 
-            df.drop(columns=['visible','region','quantity','id','user'], inplace=True)
-            
             st.dataframe(df)
 
             # GRID DESIGN
@@ -75,9 +79,7 @@ def generateMarketContainer(item_name):
             #################### BUY ORDERS ####################
    
             buying_df = pd.DataFrame(api.buy_orders)
-            buying_df = buying_df[buying_df['creation_date'] >= str(datetime.now().year)+'-01-01'] #cuttoff to only show details of previous year forward
-            buying_df.drop(columns=['visible','region','quantity','id','user'], inplace=True)
-
+            buying_df = buying_df[buying_df['createdAt'] >= str(ten_months_ago)] #cuttoff to only show details of previous year forward
             st.header(f"Buy Orders for {item_name}")
             st.write('The most recurring price is: ',str(buying_df['platinum'].mode()[0]),' plat')
             st.dataframe(buying_df)
@@ -89,7 +91,9 @@ def generateMarketContainer(item_name):
             plt = graphVisual(graph_title, buying_df)
             st.pyplot(plt)
 
-
+def getRivenData(item_name):
+    st.write('Pending at this time ')
+    
 def acquisitionData(item_name):
     api = WarframeAcquisition()
     api.queryItems(item_name)
@@ -164,7 +168,10 @@ def gatherNews():
         if len(data[i]['tags']) > 0:
             st.write(data[i]['tags'])
         st.write(data[i]['URL'])
-        st.image(data[i]['image'])
+        try:
+            st.image(data[i]['image'])
+        except:
+            pass
         st.write('-----------------------------------')
     
 
@@ -175,29 +182,21 @@ if app_chosen =='Warframe News':
     gatherNews()
 
 
-
-
-
-
-
-
-
-
-
 # WARFRAME MARKET SECTION
 if app_chosen =='Warframe Market':
     st.title("Warframe Market")
-    st.write("This screen allows users to dunamically scan warframes market for pricing based on data entered in Item name field below: ")
+    st.write("This screen allows users to dynamically scan warframes market for pricing based on data entered in Item name field below: ")
     st.write("If you do not see a button after entering an item name, hit the enter key on your keyboard :smile: ")
     api = WarframeMarket()
     with st.container():
         st.text_input("Insert Item Name: ", placeholder="Item Name here",key='warframeMarketInput')
         item_name = str(st.session_state['warframeMarketInput']).lower()
+        item_name = str(item_name).replace("'",'’')
         if item_name:
             try:
                 generateMarketContainer(item_name)
-            except:
-                st.write('Item not found')
+            except Exception as e:
+                st.write(e)
 
         else:
             pass            
@@ -212,8 +211,30 @@ if app_chosen =='Warframe Acquisition':
     with st.container():
         st.text_input("Insert Item Name: ", placeholder="Item Name here",key='WarfraneAcquisitionInput')
         item_name = str(st.session_state['WarfraneAcquisitionInput']).lower()
+        item_name = str(item_name).replace("'",'’')
         if item_name:
             acquisitionData(item_name)
         else:
             pass            
 
+# WARFRAME MARKET SECTION
+if app_chosen =='Warframe Riven Market':
+    st.title("Warframe Riven Market")
+    st.write("This screen allows users to dynamically scan warframes riven market for pricing based on data entered in the past week for the Item name in the field below: ")
+    st.write("If you do not see a button after entering an item name, hit the enter key on your keyboard :smile: ")
+    api = WarframeMarket()
+    with st.container():
+        st.text_input("Insert Item Name: ", placeholder="Item Name here",key='warframeMarketInput')
+        item_name = str(st.session_state['warframeMarketInput']).lower()
+        item_name = str(item_name).replace("'",'’')
+        if item_name:
+            try:
+                riven_data = api.rivenMarket(item_name)
+                st.write(riven_data)
+            except:
+                st.write('Item not found')
+
+        else:
+            pass            
+            
+        # CHATBOT SECTION
