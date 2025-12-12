@@ -14,7 +14,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 today = datetime.today().date()
-ten_months_ago = today - relativedelta(months=10)
+time_stopper = today - relativedelta(months=12)
 
 
 
@@ -60,13 +60,13 @@ def generateMarketContainer(item_name):
         if extraction:
             #################### SELL ORDERS ####################
             df = pd.DataFrame(api.sell_orders)
-            df = df[df['createdAt'] >= str(ten_months_ago)] #cuttoff to only show details of previous year forward
+            df = df[df['createdAt'] >= str(time_stopper)] #cuttoff to only show details of previous year forward
 
             sell_recurring_price = str(df['platinum'].mode()[0])
             
             st.header(f"Sell Orders for {item_name}")
             st.write('The most recurring price is: ',sell_recurring_price,' plat')
-
+            df = df.drop(columns=['quantity','perTrade','visible','itemId','user'])
             st.dataframe(df)
 
             # GRID DESIGN
@@ -79,9 +79,11 @@ def generateMarketContainer(item_name):
             #################### BUY ORDERS ####################
    
             buying_df = pd.DataFrame(api.buy_orders)
-            buying_df = buying_df[buying_df['createdAt'] >= str(ten_months_ago)] #cuttoff to only show details of previous year forward
+            buying_df = buying_df[buying_df['createdAt'] >= str(time_stopper)] #cuttoff to only show details of previous year forward
             st.header(f"Buy Orders for {item_name}")
             st.write('The most recurring price is: ',str(buying_df['platinum'].mode()[0]),' plat')
+            buying_df = buying_df.drop(columns=['quantity','perTrade','visible','itemId','user'])
+            
             st.dataframe(buying_df)
 
             # Graph visual
