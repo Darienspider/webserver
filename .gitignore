@@ -1,3 +1,4 @@
 env/
-images/
-WarframeAPI/__pycache__
+__pycache__/
+*.pyc
+.env

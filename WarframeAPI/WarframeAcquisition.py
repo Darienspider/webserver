@@ -17,7 +17,7 @@ class WarframeAcquisition():
         pass
     
     def getAllItems(self):
-        site = rq.get('https://raw.githubusercontent.com/WFCD/warframe-items/refs/heads/master/data/json/All.json')
+        site = rq.get('https://api.warframestat.us/items/')
         # print(site.text)
         return site.json()
     
